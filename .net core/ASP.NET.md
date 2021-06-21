@@ -20,11 +20,11 @@
 
 > 进程内托管
 
-![image-20210617161441876](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20210617161441876.png)
+![image-20210617161441876](ASP.NET/image-20210617161441876.png)
 
 > 进程外托管
 
-![image-20210617161639600](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20210617161639600.png)
+![image-20210617161639600](ASP.NET/image-20210617161639600.png)
 
 
 
@@ -127,13 +127,13 @@ public void Configure(IApplicationBuilder app, IWebHostEnvironment env);
 -  ==common中的依赖项并不会被打包成dll，所以业务模块中需要重新引入==
 - 直接引入项目虽然可以运行但是文件打开速度会被拖慢
 
-![image-20210617191552369](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20210617191552369.png)
+![image-20210617191552369](ASP.NET/image-20210617191552369.png)
 
 - 一般选用生成dll文件引入
 
 生成dll步骤为对项目右键
 
-![image-20210617191632072](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20210617191632072.png)
+![image-20210617191632072](ASP.NET/image-20210617191632072.png)
 
 > 项目结构
 
@@ -158,7 +158,7 @@ public void Configure(IApplicationBuilder app, IWebHostEnvironment env);
 
 ## ConfigureServices and Configure
 
-![image-20210617192822166](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20210617192822166.png)
+![image-20210617192822166](ASP.NET/image-20210617192822166.png)
 
 > configureServices 是一个容器，所使用的服务及方法要添加到公共的容器之中， Configure是ConfigureServices中注册进来的所有服务要在Configure之中进行使用
 >
@@ -204,7 +204,7 @@ public void Configure(IApplicationBuilder app, IWebHostEnvironment env);
 >
 >    - 包含AddControllersWithViews()及AddRazorPages()功能。包含的功能最为齐全。
 
-![image-20210617200757469](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20210617200757469.png)
+![image-20210617200757469](ASP.NET/image-20210617200757469.png)
 
 ## 异步编程 async await
 
@@ -244,3 +244,234 @@ void返回类型主要用在事件处理程序中，一种称为“fire and forg
 ==1、尽量优先使用Task<TResult>和Task作为异步方法的返回类型。==
 
 ==2、如果用了await则方法必须使用async来修饰，并且是Task的类型。==
+
+## 控制器返回值
+
+> ASP.NET Core 提供以下 Web API 控制器操作返回类型选项：
+>
+> - 特定类型
+> - IActionResult
+> - ActionResult<T>
+
+1. 特定类型
+
+```c#
+[HttpGet]
+public List<Product> Get() =>
+    _repository.GetProducts();
+```
+
+上述操作不接受任何参数
+
+2. 返回IEnumerable<T>或IAsyncEnumerable<T>
+
+```c#
+[HttpGet("syncsale")]
+public IEnumerable<Product> GetOnSaleProducts()
+{
+    var products = _repository.GetProducts();
+
+    foreach (var product in products)
+    {
+        if (product.IsOnSale)
+        {
+            yield return product;
+        }
+    }
+}
+```
+
+> IEnumerable
+
+```c#
+///IEnumerable可枚举类型--可迭代类型
+///IEnumerator枚举器
+///Enum枚举
+///
+///只要一个类型实现了IEnumerable接口 就可以对他进行遍历
+///yield 是一个迭代器，封装了IEnumerator枚举器
+```
+
+> 扩展方法
+
+```c#
+class Calculate
+{
+    public int Add(int a, int b){
+        return a+b;
+    }
+}
+static class CalculateNew
+{
+    public static int Addnew(this Calculate calculate, int a, int c){
+        return a+b+c;
+    }
+}
+```
+
+> linq–数据查询语言
+
+可以查询数组、list集合、数据返回类型是IEnumerable类型的
+
+3. IActionResult
+
+当操作中可能有多个 ActionResult 返回类型时，适合使用 IActionResult 返回类型。 
+
+ActionResult 类型表示多种 HTTP 状态代码。 派生自 ActionResult 的任何非抽象类都限定为有效的返回类型。
+
+ 此类别中的某些常见返回类型为 BadRequestResult (400)、NotFoundResult (404) 和 OkObjectResult (200)。 或者，可以使用 ControllerBase 类中的便利方法从操作返回 ActionResult 类型。 例如，return BadRequest(); 是 return new BadRequestResult(); 的简写形式。
+
+## 委托
+
+对于委托的理解，就是函数可以作为参数进行传入，且函数多为lamba表达式的形式。
+
+## mvc参数获取
+
+http://localhost:5000/fromurl/test?name=mjzhou&age=10为例：
+
+![image-20210621134720521](ASP.NET/image-20210621134720521.png)
+
+**通过QueryString获取参数**
+
+1. Request.Query对象
+
+```c#
+        // /fromurl/test?name=mjzhou
+        public IActionResult Test()
+        {
+            var name = Request.Query["name"];
+            return Content(name);
+        }
+```
+
+2. 自动参数绑定
+
+如果Action的型参的名称跟QueryString的Key一致，则MVC框架会自动帮我们绑定参数的值，不用手动获取。
+
+```c#
+        // /fromurl/test?name=mjzhou
+        public IActionResult Test1(string name)
+        {
+            return Content(name);
+        }
+```
+
+如果参数绑定的名称跟QueryString的Key不一致，可以使用FromQueryAttribute强制指定绑定的Key的名称。
+
+```c#
+        public IActionResult Test2([FromQuery(Name = "id")]string bh)
+        {
+            return Content(bh);
+        }
+```
+
+**通过PATH获取参数**
+
+1. Request.Path对象
+
+   Request.Path对象包含了本次http请求的Path的原始信息，一般可以通过/来分隔，手工获取想要的参数。
+
+```c#
+//      /fromurl/test3
+        public IActionResult Test3()
+        {
+            var path = Request.Path;
+            return Content(path);
+        }
+```
+
+2. 自动参数绑定
+
+```c#
+//      /fromurl/Test4/mjzhou/1000
+        [Route("FromUrl/test4/{name}/{id}")]
+        public IActionResult Test4(string name, int id)
+        {
+            return Content($"{name}/{id}");
+        }
+//指定action接受的HTTP Method的方法
+        [HttpGet("FromUrl/test5/{name}/{id}")]
+        public IActionResult Test5(string name, int id)
+        {
+            return Content($"{name}/{id}");
+        }
+//如果定义的名称不一样，可以使用FromRoute强制指定解析的名称
+        [Route("FromUrl/test6/{name}/{id}")]
+        public IActionResult Test6([FromRoute(Name ="name")]string xm, [FromRoute(Name = "id")]int bh)
+        {
+            return Content($"{xm}/{bh}");
+        }
+```
+
+**从Header上获取参数**
+
+1. Request.Headers对象
+
+Request.Headers是一个字典，包含了本次请求的Headers。所以我们可以通过Request.Headers对象轻松获取某个header的值。
+
+```c#
+        // /FromHeader/test
+        public IActionResult Test()
+        {
+            var myName = Request.Headers["myName"];
+
+            return Content(myName);
+        }
+```
+
+2. 自动参数绑定
+
+通过在action的型参上打上FromHeaderAttribute，可以告诉框架自动从header获取参数。
+
+```c#
+        public IActionResult Test1([FromHeader]string myName)
+        {
+            return Content(myName);
+        }
+```
+
+如果action的型参跟header的key值不一致，可以通过FromHeaderAttribute强制指定匹配的header的key值。
+
+```c#
+        public IActionResult Test2([FromHeader(Name = "myName")]string name)
+        {
+            return Content(name);
+        }
+```
+
+**从Body获取参数**
+
+1. Request.Body对象
+
+Request.Body是一个Stream，
+
+```c#
+public class model1
+        {
+            public string NAME { get; set; }
+        }
+
+        public async Task<IActionResult> Test()
+        {
+            Request.EnableBuffering();
+
+            string body = "";
+            var stream = Request.Body;
+            if (stream != null)
+            {
+                stream.Seek(0, SeekOrigin.Begin);
+                using (var reader = new StreamReader(stream, Encoding.UTF8, true, 1024, true))
+                {
+                    body = await reader.ReadToEndAsync();
+                }
+                stream.Seek(0, SeekOrigin.Begin);
+            }
+
+            var model = JsonConvert.DeserializeObject<model1>(body);
+
+            return Content(model.NAME);
+        }
+```
+
+
+
